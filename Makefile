@@ -115,14 +115,14 @@ setup-env: ## Set up environment variables
 # DATA & TRAINING
 # =============================================================================
 
-collect-data: ## Run interactive data collection
+collect-data: ## Collect demonstration episodes with rotation policy
 	@printf "${BLUE}Starting data collection...${NC}\n"
-	@printf "${YELLOW}Controls:${NC}\n"
-	@printf "  W/A/S/D/Q/E: Arm movement\n"
-	@printf "  G/H: Gripper close/open\n"
-	@printf "  J/K: Torso lift\n"
-	@printf "  X: Save episode | Z: Reset\n"
-	@uv run python scripts/collect_data.py
+	@printf "${YELLOW}Usage: make collect-data EPISODES=10 STEPS=200${NC}\n"
+	@uv run python scripts/collect_data.py \
+		--num-episodes $(or $(EPISODES),10) \
+		--steps-per-episode $(or $(STEPS),200) \
+		--output-dir datasets
+	@printf "${GREEN}✓ Data collection complete! Check datasets/${NC}\n"
 
 train: ## Train neural SDF perception
 	@printf "${BLUE}Starting training...${NC}\n"
