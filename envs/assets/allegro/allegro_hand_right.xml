@@ -1,0 +1,215 @@
+<mujoco model="allegro_hand_right">
+  <compiler angle="radian" meshdir="meshes" autolimits="true"/>
+  
+  <option timestep="0.002" iterations="50" solver="Newton" tolerance="1e-10"/>
+  
+  <default>
+    <joint armature="0.01" damping="0.5" limited="true"/>
+    <geom condim="4" friction="1 0.5 0.001" margin="0.001"/>
+    <motor ctrlrange="-1 1" ctrllimited="true"/>
+  </default>
+  
+  <asset>
+    <mesh name="palm" file="palm.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="l1" file="l1.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="l2" file="l2.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="l3" file="l3.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="l4" file="l4.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="finger_tip" file="finger_tip.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="finger_tip_silicon" file="finger_tip_silicon.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="t1_set" file="t1_set.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="t2_set" file="t2_set.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="t3_set" file="t3_set.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="t4_set" file="t4_set.stl" scale="0.001 0.001 0.001"/>
+    
+    <material name="black" rgba="0.2 0.2 0.2 1"/>
+    <material name="white" rgba="0.9 0.9 0.9 1"/>
+    <material name="tactile" rgba="0.8 0.2 0.2 1"/>
+  </asset>
+  
+  <worldbody>
+    <body name="palm" pos="0 0 0">
+      <inertial pos="0 0 0.0475" mass="0.4154" diaginertia="1e-4 1e-4 1e-4"/>
+      <geom name="palm_geom" type="mesh" mesh="palm" pos="0.02 0 -0.1" euler="0 3.14 1.57" material="black"/>
+      
+      <!-- Index Finger (Finger 0) -->
+      <body name="link_0" pos="0 0.0405 -0.00945" euler="-0.0873 0 0">
+        <inertial pos="0 0 0" mass="0.0176" diaginertia="1.29e-5 1.23e-5 3e-6"/>
+        <joint name="joint_0" type="hinge" axis="0 0 1" range="-0.47 0.47"/>
+        <geom name="link_0_geom" type="mesh" mesh="l1" pos="-0.025 -0.019 0.165" euler="0 0 -1.57" material="black"/>
+        
+        <body name="link_1" pos="0 0 0.021">
+          <inertial pos="0 0 0" mass="0.066" diaginertia="6.25e-6 3.13e-5 2.9e-5"/>
+          <joint name="joint_1" type="hinge" axis="0 1 0" range="-0.196 1.8"/>
+          <geom name="link_1_geom" type="mesh" mesh="l2" pos="-0.025 -0.019 0.145" euler="0 0 -1.57" material="black"/>
+          
+          <body name="link_2" pos="0 0 0.051">
+            <inertial pos="0 0 0" mass="0.0366" diaginertia="3.81e-6 1.45e-5 1.29e-5"/>
+            <joint name="joint_2" type="hinge" axis="0 1 0" range="-0.174 1.709"/>
+            <geom name="link_2_geom" type="mesh" mesh="l3" pos="-0.025 -0.019 0.0945" euler="0 0 -1.57" material="black"/>
+            
+            <body name="link_3" pos="0 0 0.0384">
+              <inertial pos="0 0 0" mass="0.00569" diaginertia="1.18e-6 2.4e-6 1.67e-6"/>
+              <joint name="joint_3" type="hinge" axis="0 1 0" range="-0.227 1.618"/>
+              <geom name="link_3_geom" type="mesh" mesh="l4" pos="-0.025 -0.019 0.0561" euler="0 0 -1.57" material="black"/>
+              
+              <body name="fingertip_0" pos="0 0 0.0267">
+                <geom name="fingertip_0_geom" type="mesh" mesh="finger_tip" pos="-0.05482 -0.01393 -0.00995" euler="0 0 -1.57" material="white"/>
+                <geom name="fingertip_0_tactile" type="sphere" size="0.012" pos="0 0 0.01" material="tactile" contype="1" conaffinity="1"/>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+      
+      <!-- Middle Finger (Finger 1) -->
+      <body name="link_4" pos="0 0 -0.0079">
+        <inertial pos="0 0 0" mass="0.0176" diaginertia="1.29e-5 1.23e-5 3e-6"/>
+        <joint name="joint_4" type="hinge" axis="0 0 1" range="-0.47 0.47"/>
+        <geom name="link_4_geom" type="mesh" mesh="l1" pos="-0.025 -0.019 0.165" euler="0 0 -1.57" material="black"/>
+        
+        <body name="link_5" pos="0 0 0.021">
+          <inertial pos="0 0 0" mass="0.066" diaginertia="6.25e-6 3.13e-5 2.9e-5"/>
+          <joint name="joint_5" type="hinge" axis="0 1 0" range="-0.196 1.8"/>
+          <geom name="link_5_geom" type="mesh" mesh="l2" pos="-0.025 -0.019 0.145" euler="0 0 -1.57" material="black"/>
+          
+          <body name="link_6" pos="0 0 0.051">
+            <inertial pos="0 0 0" mass="0.0366" diaginertia="3.81e-6 1.45e-5 1.29e-5"/>
+            <joint name="joint_6" type="hinge" axis="0 1 0" range="-0.174 1.709"/>
+            <geom name="link_6_geom" type="mesh" mesh="l3" pos="-0.025 -0.019 0.0945" euler="0 0 -1.57" material="black"/>
+            
+            <body name="link_7" pos="0 0 0.0384">
+              <inertial pos="0 0 0" mass="0.00569" diaginertia="1.18e-6 2.4e-6 1.67e-6"/>
+              <joint name="joint_7" type="hinge" axis="0 1 0" range="-0.227 1.618"/>
+              <geom name="link_7_geom" type="mesh" mesh="l4" pos="-0.025 -0.019 0.0561" euler="0 0 -1.57" material="black"/>
+              
+              <body name="fingertip_1" pos="0 0 0.0267">
+                <geom name="fingertip_1_geom" type="mesh" mesh="finger_tip" pos="-0.05482 -0.01393 -0.00995" euler="0 0 -1.57" material="white"/>
+                <geom name="fingertip_1_tactile" type="sphere" size="0.012" pos="0 0 0.01" material="tactile" contype="1" conaffinity="1"/>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+      
+      <!-- Ring Finger (Finger 2) -->
+      <body name="link_8" pos="0.0025 -0.0405 -0.00945" euler="0.0873 0 0">
+        <inertial pos="0 0 0" mass="0.0176" diaginertia="1.29e-5 1.23e-5 3e-6"/>
+        <joint name="joint_8" type="hinge" axis="0 0 1" range="-0.47 0.47"/>
+        <geom name="link_8_geom" type="mesh" mesh="l1" pos="-0.025 -0.019 0.165" euler="0 0 -1.57" material="black"/>
+        
+        <body name="link_9" pos="0 0 0.021">
+          <inertial pos="0 0 0" mass="0.066" diaginertia="6.25e-6 3.13e-5 2.9e-5"/>
+          <joint name="joint_9" type="hinge" axis="0 1 0" range="-0.196 1.8"/>
+          <geom name="link_9_geom" type="mesh" mesh="l2" pos="-0.025 -0.019 0.145" euler="0 0 -1.57" material="black"/>
+          
+          <body name="link_10" pos="0 0 0.051">
+            <inertial pos="0 0 0" mass="0.0366" diaginertia="3.81e-6 1.45e-5 1.29e-5"/>
+            <joint name="joint_10" type="hinge" axis="0 1 0" range="-0.174 1.709"/>
+            <geom name="link_10_geom" type="mesh" mesh="l3" pos="-0.025 -0.019 0.0945" euler="0 0 -1.57" material="black"/>
+            
+            <body name="link_11" pos="0 0 0.0384">
+              <inertial pos="0 0 0" mass="0.00569" diaginertia="1.18e-6 2.4e-6 1.67e-6"/>
+              <joint name="joint_11" type="hinge" axis="0 1 0" range="-0.227 1.618"/>
+              <geom name="link_11_geom" type="mesh" mesh="l4" pos="-0.025 -0.019 0.0561" euler="0 0 -1.57" material="black"/>
+              
+              <body name="fingertip_2" pos="0 0 0.0267">
+                <geom name="fingertip_2_geom" type="mesh" mesh="finger_tip" pos="-0.05482 -0.01393 -0.00995" euler="0 0 -1.57" material="white"/>
+                <geom name="fingertip_2_tactile" type="sphere" size="0.012" pos="0 0 0.01" material="tactile" contype="1" conaffinity="1"/>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+      
+      <!-- Thumb (Finger 3) -->
+      <body name="link_12" pos="0.002 0.027 -0.06342" euler="0 -1.658 -1.5708">
+        <inertial pos="0 0 0" mass="0.0446" diaginertia="5.44e-5 9.19e-6 4.8e-5"/>
+        <joint name="joint_12" type="hinge" axis="-1 0 0" range="0 1.78"/>
+        <geom name="link_12_geom" type="mesh" mesh="t1_set" pos="0.021 -0.1145 0.0725" euler="3.927 3.14 3.14" material="black"/>
+        
+        <body name="link_13" pos="-0.001 0 0.06874">
+          <inertial pos="0 0 0" mass="0.0173" diaginertia="1.52e-5 1.33e-5 2.85e-6"/>
+          <joint name="joint_13" type="hinge" axis="0 0 1" range="-0.26 1.78"/>
+          <geom name="link_13_geom" type="mesh" mesh="t2_set" pos="-0.138 -0.0605 0.2143" euler="3.14 3.14 1.57" material="black"/>
+          
+          <body name="link_14" pos="0 0 0">
+            <inertial pos="0 0 0" mass="0.03607" diaginertia="3.7e-6 1.54e-5 1.39e-5"/>
+            <joint name="joint_14" type="hinge" axis="0 1 0" range="-0.05 1.85"/>
+            <geom name="link_14_geom" type="mesh" mesh="t3_set" pos="-0.1265 -0.061 0.166" euler="3.14 3.14 1.57" material="black"/>
+            
+            <body name="link_15" pos="0 0 0.038">
+              <inertial pos="0 0 0" mass="0.0338" diaginertia="2.94e-6 1.13e-5 1.06e-5"/>
+              <joint name="joint_15" type="hinge" axis="0 1 0" range="-0.09 1.80"/>
+              <geom name="link_15_geom" type="mesh" mesh="t4_set" pos="-0.149 -0.061 0.096" euler="3.14 3.14 1.57" material="black"/>
+              
+              <body name="fingertip_3" pos="0 0 0.05">
+                <geom name="fingertip_3_geom" type="mesh" mesh="finger_tip_silicon" pos="-0.014 0.0545 -0.0172" euler="0 0 3.14" material="white"/>
+                <geom name="fingertip_3_tactile" type="sphere" size="0.012" pos="0 0 0.01" material="tactile" contype="1" conaffinity="1"/>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  
+  <actuator>
+    <!-- Index Finger -->
+    <motor name="motor_0" joint="joint_0" gear="1"/>
+    <motor name="motor_1" joint="joint_1" gear="1"/>
+    <motor name="motor_2" joint="joint_2" gear="1"/>
+    <motor name="motor_3" joint="joint_3" gear="1"/>
+    <!-- Middle Finger -->
+    <motor name="motor_4" joint="joint_4" gear="1"/>
+    <motor name="motor_5" joint="joint_5" gear="1"/>
+    <motor name="motor_6" joint="joint_6" gear="1"/>
+    <motor name="motor_7" joint="joint_7" gear="1"/>
+    <!-- Ring Finger -->
+    <motor name="motor_8" joint="joint_8" gear="1"/>
+    <motor name="motor_9" joint="joint_9" gear="1"/>
+    <motor name="motor_10" joint="joint_10" gear="1"/>
+    <motor name="motor_11" joint="joint_11" gear="1"/>
+    <!-- Thumb -->
+    <motor name="motor_12" joint="joint_12" gear="1"/>
+    <motor name="motor_13" joint="joint_13" gear="1"/>
+    <motor name="motor_14" joint="joint_14" gear="1"/>
+    <motor name="motor_15" joint="joint_15" gear="1"/>
+  </actuator>
+  
+  <sensor>
+    <jointpos name="pos_0" joint="joint_0"/>
+    <jointpos name="pos_1" joint="joint_1"/>
+    <jointpos name="pos_2" joint="joint_2"/>
+    <jointpos name="pos_3" joint="joint_3"/>
+    <jointpos name="pos_4" joint="joint_4"/>
+    <jointpos name="pos_5" joint="joint_5"/>
+    <jointpos name="pos_6" joint="joint_6"/>
+    <jointpos name="pos_7" joint="joint_7"/>
+    <jointpos name="pos_8" joint="joint_8"/>
+    <jointpos name="pos_9" joint="joint_9"/>
+    <jointpos name="pos_10" joint="joint_10"/>
+    <jointpos name="pos_11" joint="joint_11"/>
+    <jointpos name="pos_12" joint="joint_12"/>
+    <jointpos name="pos_13" joint="joint_13"/>
+    <jointpos name="pos_14" joint="joint_14"/>
+    <jointpos name="pos_15" joint="joint_15"/>
+    
+    <jointvel name="vel_0" joint="joint_0"/>
+    <jointvel name="vel_1" joint="joint_1"/>
+    <jointvel name="vel_2" joint="joint_2"/>
+    <jointvel name="vel_3" joint="joint_3"/>
+    <jointvel name="vel_4" joint="joint_4"/>
+    <jointvel name="vel_5" joint="joint_5"/>
+    <jointvel name="vel_6" joint="joint_6"/>
+    <jointvel name="vel_7" joint="joint_7"/>
+    <jointvel name="vel_8" joint="joint_8"/>
+    <jointvel name="vel_9" joint="joint_9"/>
+    <jointvel name="vel_10" joint="joint_10"/>
+    <jointvel name="vel_11" joint="joint_11"/>
+    <jointvel name="vel_12" joint="joint_12"/>
+    <jointvel name="vel_13" joint="joint_13"/>
+    <jointvel name="vel_14" joint="joint_14"/>
+    <jointvel name="vel_15" joint="joint_15"/>
+  </sensor>
+</mujoco>

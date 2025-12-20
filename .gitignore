@@ -1,0 +1,16 @@
+odocs/
+opencode.json
+datasets/
+outputs/
+__pycache__/
+*.pyc
+uv.lock
+.env
+.venv/
+.vscode/
+.idea/
+*.pth
+*.pt
+.DS_Store
+*AGENTS.md
+*.egg-info/
