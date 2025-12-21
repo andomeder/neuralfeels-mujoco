@@ -278,6 +278,14 @@ class PoseGraphOptimizer:
         self.keyframes: list[Keyframe] = []
         self.visual_odom = VisualOdometry()
 
+        # Determine SDF model device (for cross-device optimization)
+        self.sdf_device = self.device
+        if sdf_model is not None:
+            try:
+                self.sdf_device = next(sdf_model.parameters()).device
+            except StopIteration:
+                pass
+
         # Current object pose estimate
         self._current_pose: Optional[th.SE3] = None
 
@@ -421,8 +429,8 @@ class PoseGraphOptimizer:
         sdf_weight = th.ScaleCostWeight(self.config.sdf_weight)
         sdf_weight.to(self.device)
 
-        # Get SDF model device for moving tensors during query
-        sdf_device = next(self.sdf_model.parameters()).device
+        # Use pre-computed SDF device
+        sdf_device = self.sdf_device
 
         # Simple approach: use autodiff cost function
         def sdf_error_fn(optim_vars, aux_vars):
