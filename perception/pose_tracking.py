@@ -409,17 +409,20 @@ class PoseGraphOptimizer:
         # Create Theseus optimization problem
         objective = th.Objective()
 
-        # Create pose variable (to optimize)
+        # Create pose variable (to optimize) - on CPU for Theseus
         pose_var = self._current_pose.copy()
         pose_var.name = "object_pose"
 
-        # Create points auxiliary variable
+        # Create points auxiliary variable - on CPU for Theseus
         points_tensor = torch.tensor(sampled_points, dtype=torch.float32).unsqueeze(0)
         points_var = th.Variable(tensor=points_tensor.to(self.device), name="observed_points")
 
         # Add SDF consistency factor
         sdf_weight = th.ScaleCostWeight(self.config.sdf_weight)
         sdf_weight.to(self.device)
+
+        # Get SDF model device for moving tensors during query
+        sdf_device = next(self.sdf_model.parameters()).device
 
         # Simple approach: use autodiff cost function
         def sdf_error_fn(optim_vars, aux_vars):
@@ -433,9 +436,11 @@ class PoseGraphOptimizer:
             pts_t = pts.transpose(1, 2)
             pts_obj = torch.bmm(R.transpose(1, 2), pts_t - t).transpose(1, 2)
 
-            # Query SDF
-            pts_flat = pts_obj.reshape(-1, 3)
-            sdf_vals = self.sdf_model(pts_flat)
+            # Query SDF - move points to SDF device, then result back to CPU
+            pts_flat = pts_obj.reshape(-1, 3).to(sdf_device)
+            with torch.no_grad():
+                sdf_vals = self.sdf_model(pts_flat)
+            sdf_vals = sdf_vals.to(self.device)
 
             return sdf_vals.reshape(1, -1)
 
