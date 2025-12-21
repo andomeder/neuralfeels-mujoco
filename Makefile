@@ -73,6 +73,10 @@ ifeq ($(COMPUTE_BACKEND), intel)
 	@printf "${YELLOW}Step 1/3: Installing PyTorch with XPU support${NC}\n"
 	@uv pip install torch==2.9.0 torchvision==0.24.0 torchaudio==2.9.0 \
 		--index-url https://download.pytorch.org/whl/xpu
+	@printf "${YELLOW}Step 2/3: Installing Theseus dependencies (requires --no-build-isolation)${NC}\n"
+	@uv pip install Cython scikit-sparse --no-build-isolation
+	@printf "${YELLOW}Step 3/3: Installing Theseus optimizer${NC}\n"
+	@uv pip install theseus-ai --no-build-isolation
 	@printf "${GREEN}✓ Intel XPU dependencies installed${NC}\n"
 	@printf "${BLUE}Running sanity test...${NC}\n"
 	@uv run python -c "import torch; \
