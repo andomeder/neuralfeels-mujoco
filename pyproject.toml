@@ -21,6 +21,9 @@ dependencies = [
     "scikit-image>=0.21.0",
     "imageio[ffmpeg]>=2.31.0",
     
+    # Depth estimation
+    "transformers>=4.30.0",
+    
     # Visualization
     "open3d>=0.18.0",
     "matplotlib>=3.6.0",

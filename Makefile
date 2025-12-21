@@ -4,7 +4,7 @@
 export PYTHONPATH=$(shell pwd)
 
 .PHONY: help install install-dev format lint test clean setup-env gpu-info
-.PHONY: collect-data train eval demo video docker-build docker-run
+.PHONY: collect-data train eval demo video replay docker-build docker-run
 .PHONY: setup-mise setup-uv dev-setup quick-test
 
 # Colors
@@ -130,22 +130,52 @@ collect-data: ## Collect demonstration episodes with rotation policy
 
 train: ## Train neural SDF perception
 	@printf "${BLUE}Starting training...${NC}\n"
-	@uv run python scripts/train.py
+	@printf "${YELLOW}Usage: make train EPISODES=datasets MAX_EPISODES=10 ITERS=1000 SDF_ONLY=1${NC}\n"
+	@uv run python scripts/train.py \
+		--episodes $(or $(EPISODES),datasets) \
+		--output $(or $(OUTPUT),outputs) \
+		--max-episodes $(or $(MAX_EPISODES),10) \
+		--iterations $(or $(ITERS),1000) \
+		$(if $(SDF_ONLY),--sdf-only,)
 	@printf "${GREEN}✓ Training complete! Check outputs/checkpoints/${NC}\n"
 
 eval: ## Evaluate on test set
 	@printf "${BLUE}Running evaluation...${NC}\n"
-	@uv run python scripts/eval.py
+	@printf "${YELLOW}Usage: make eval MESH=outputs/final_mesh.npz GT_MESH=meshes/gt.obj${NC}\n"
+	@uv run python scripts/eval.py \
+		--mesh $(or $(MESH),outputs/final_mesh.npz) \
+		--output $(or $(OUTPUT),outputs/metrics) \
+		$(if $(GT_MESH),--gt-mesh $(GT_MESH),) \
+		$(if $(CHECKPOINT),--checkpoint $(CHECKPOINT),) \
+		$(if $(POSES),--poses $(POSES),) \
+		$(if $(GT_POSES),--gt-poses $(GT_POSES),)
 	@printf "${GREEN}✓ Evaluation complete! Check outputs/metrics/${NC}\n"
 
 demo: ## Run live visualization
 	@printf "${BLUE}Starting live demo...${NC}\n"
-	@uv run python scripts/demo.py --mode live
+	@printf "${YELLOW}Usage: make demo STEPS=200 NO_PERCEPTION=1${NC}\n"
+	@uv run python scripts/demo.py \
+		--mode live \
+		--steps $(or $(STEPS),200) \
+		$(if $(NO_PERCEPTION),--no-perception,)
 
 video: ## Generate demo video
 	@printf "${BLUE}Generating demo video...${NC}\n"
-	@uv run python scripts/demo.py --mode video --output outputs/videos/demo.mp4
-	@printf "${GREEN}✓ Video saved to outputs/videos/demo.mp4${NC}\n"
+	@printf "${YELLOW}Usage: make video OUTPUT=outputs/videos/demo.mp4 STEPS=200${NC}\n"
+	@uv run python scripts/demo.py \
+		--mode video \
+		--output $(or $(OUTPUT),outputs/videos/demo.mp4) \
+		--steps $(or $(STEPS),200) \
+		$(if $(NO_PERCEPTION),--no-perception,)
+	@printf "${GREEN}✓ Video saved to $(or $(OUTPUT),outputs/videos/demo.mp4)${NC}\n"
+
+replay: ## Replay a collected episode
+	@printf "${BLUE}Replaying episode...${NC}\n"
+	@printf "${YELLOW}Usage: make replay EPISODE=datasets/episode_000 OUTPUT=video.mp4${NC}\n"
+	@uv run python scripts/demo.py \
+		--mode replay \
+		--episode $(or $(EPISODE),datasets/episode_000) \
+		$(if $(OUTPUT),--output $(OUTPUT),)
 
 # =============================================================================
 # CODE QUALITY
