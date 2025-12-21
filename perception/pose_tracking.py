@@ -33,6 +33,7 @@ class PoseTrackingConfig:
     reg_weight: float = 0.01  # Weight for motion regularization
     icp_weight: float = 1.0  # Weight for ICP/odometry
     device: str = "cpu"  # Force CPU for Theseus (XPU not supported)
+    use_sdf_optimization: bool = False  # Disable SDF optimization (unstable with XPU)
 
 
 @dataclass
@@ -373,8 +374,13 @@ class PoseGraphOptimizer:
         if len(self.keyframes) > self.config.window_size:
             self.keyframes.pop(0)
 
-        # Optimize pose graph if we have SDF model and points
-        if self.sdf_model is not None and points is not None and len(points) > 10:
+        # Optimize pose graph if enabled and we have SDF model and points
+        if (
+            self.config.use_sdf_optimization
+            and self.sdf_model is not None
+            and points is not None
+            and len(points) > 10
+        ):
             self._optimize_with_sdf(points)
 
         return self.current_pose
