@@ -113,6 +113,7 @@ def get_tactile_from_mujoco(
 def visualize_tactile(
     tactile: np.ndarray,
     finger_names: list[str] | None = None,
+    contact_forces: np.ndarray | None = None,
 ) -> np.ndarray:
     import cv2
 
@@ -130,6 +131,10 @@ def visualize_tactile(
         depth_colored = cv2.applyColorMap((depth * 255).astype(np.uint8), cv2.COLORMAP_JET)
         depth_resized = cv2.resize(depth_colored, (cell_size, cell_size))
 
+        has_contact = depth.max() > 0.05
+        if has_contact:
+            cv2.rectangle(depth_resized, (0, 0), (cell_size - 1, cell_size - 1), (0, 255, 255), 3)
+
         cv2.putText(
             depth_resized,
             finger_names[i],
@@ -139,6 +144,19 @@ def visualize_tactile(
             (255, 255, 255),
             1,
         )
+
+        if contact_forces is not None and i < len(contact_forces):
+            force = min(1.0, contact_forces[i])
+            bar_height = int(force * (cell_size - 10))
+            bar_x = cell_size - 12
+            cv2.rectangle(
+                depth_resized,
+                (bar_x, cell_size - 5),
+                (bar_x + 8, cell_size - 5 - bar_height),
+                (0, 255, 0),
+                -1,
+            )
+            cv2.rectangle(depth_resized, (bar_x, 5), (bar_x + 8, cell_size - 5), (100, 100, 100), 1)
 
         grid[:, i * cell_size : (i + 1) * cell_size] = depth_resized
 
