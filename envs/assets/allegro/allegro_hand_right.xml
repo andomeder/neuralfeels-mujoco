@@ -1,12 +1,15 @@
 <mujoco model="allegro_hand_right">
   <compiler angle="radian" meshdir="meshes" autolimits="true"/>
   
-  <option timestep="0.002" iterations="50" solver="Newton" tolerance="1e-10"/>
+  <!-- Physics stability: implicit integrator + more iterations for contact-rich manipulation -->
+  <option timestep="0.001" iterations="100" solver="Newton" tolerance="1e-10" integrator="implicit" cone="elliptic" impratio="10"/>
   
   <default>
-    <joint armature="0.01" damping="0.5" limited="true"/>
-    <geom condim="4" friction="1 0.5 0.001" margin="0.001"/>
-    <motor ctrlrange="-1 1" ctrllimited="true"/>
+    <!-- Stability fix: higher armature (rotor inertia) prevents acceleration explosion -->
+    <!-- Higher damping dissipates energy, softer contacts via solref/solimp -->
+    <joint armature="0.1" damping="2.0" limited="true" stiffness="0"/>
+    <geom condim="4" friction="1.0 0.5 0.01" margin="0.002" solref="0.02 1" solimp="0.9 0.95 0.001"/>
+    <motor ctrlrange="-1 1" ctrllimited="true" gear="50"/>
   </default>
   
   <asset>

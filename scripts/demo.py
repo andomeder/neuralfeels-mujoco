@@ -475,8 +475,10 @@ def run_live_demo(
         use_open3d: Whether to show Open3D 3D viewer
     """
     print("Initializing environment...")
-    env = AllegroHandEnv(render_mode="rgb_array")
-    policy = RotationPolicy()
+    env = AllegroHandEnv(render_mode="rgb_array", use_grasp_stabilizer=True)
+    grasp_base = np.array([0, 0.6, 0.6, 0.5] * 3 + [0.6, 0.5, 0.6, 0.5])
+    gentle_amplitude = np.array([0.02, 0.08, 0.08, 0.08] * 4)
+    policy = RotationPolicy(amplitude=gentle_amplitude, base_position=grasp_base)
     visualizer = DemoVisualizer()
 
     open3d_viewer = None
@@ -535,6 +537,14 @@ def run_live_demo(
 
         # Step environment
         obs, reward, terminated, truncated, info = env.step(action_normalized)
+
+        # NaN detection - terminate early if simulation becomes unstable
+        if np.isnan(obs["qpos"]).any() or np.isnan(obs["qvel"]).any():
+            print(f"WARNING: NaN detected at step {step}. Terminating.")
+            break
+        if np.abs(obs["qpos"]).max() > 100 or np.abs(obs["qvel"]).max() > 5000:
+            print(f"WARNING: Unstable values at step {step}. Terminating.")
+            break
 
         # Process through perception
         depth_fused = None

@@ -270,8 +270,8 @@ class AllegroHandEnv(gym.Env):
         self.data.qpos[: self.NUM_JOINTS] = init_qpos
 
         object_qpos_start = self.NUM_JOINTS
-        object_pos = np.array([0, 0, 0.1])
-        object_pos[:2] += self.np_random.uniform(-0.01, 0.01, size=2)
+        object_pos = np.array([0.05, 0, 0.095])
+        object_pos[:2] += self.np_random.uniform(-0.003, 0.003, size=2)
         self.data.qpos[object_qpos_start : object_qpos_start + 3] = object_pos
 
         random_quat = self._random_quaternion()

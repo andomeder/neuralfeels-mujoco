@@ -1,7 +1,7 @@
 <mujoco>
   <!-- Hammer (composite: box head + cylinder handle) -->
   <worldbody>
-    <body name="object" pos="0 0 0.1">
+    <body name="object" pos="0.05 0 0.095">
       <freejoint name="object_joint"/>
       <inertial pos="0 0 0" mass="0.4" diaginertia="8e-4 8e-4 1e-4"/>
       <!-- Head (box) -->

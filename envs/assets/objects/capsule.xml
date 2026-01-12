@@ -1,7 +1,7 @@
 <mujoco>
   <!-- Capsule (like banana: 12cm length, 3cm diameter) -->
   <worldbody>
-    <body name="object" pos="0 0 0.1">
+    <body name="object" pos="0.05 0 0.095">
       <freejoint name="object_joint"/>
       <inertial pos="0 0 0" mass="0.12" diaginertia="1.5e-4 1.5e-4 3e-5"/>
       <geom name="object_geom" type="capsule" size="0.015 0.06" 

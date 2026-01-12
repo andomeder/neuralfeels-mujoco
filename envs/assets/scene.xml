@@ -1,7 +1,8 @@
 <mujoco model="allegro_hand_scene">
   <compiler angle="radian" meshdir="allegro/meshes" autolimits="true"/>
   
-  <option timestep="0.002" iterations="50" solver="Newton" tolerance="1e-10" gravity="0 0 -9.81"/>
+  <!-- Physics stability: implicit integrator + more iterations for contact-rich manipulation -->
+  <option timestep="0.001" iterations="100" solver="Newton" tolerance="1e-10" gravity="0 0 -9.81" integrator="implicit" cone="elliptic" impratio="10"/>
   
   <visual>
     <headlight ambient="0.4 0.4 0.4" diffuse="0.8 0.8 0.8" specular="0.2 0.2 0.2"/>
@@ -10,9 +11,11 @@
   </visual>
   
   <default>
-    <joint armature="0.01" damping="0.5" limited="true"/>
-    <geom condim="4" friction="1 0.5 0.001" margin="0.001"/>
-    <motor ctrlrange="-1 1" ctrllimited="true"/>
+    <!-- Stability fix: higher armature (rotor inertia) prevents acceleration explosion -->
+    <!-- Higher damping dissipates energy, softer contacts via solref/solimp -->
+    <joint armature="0.1" damping="2.0" limited="true" stiffness="0"/>
+    <geom condim="4" friction="1.0 0.5 0.01" margin="0.002" solref="0.02 1" solimp="0.9 0.95 0.001"/>
+    <motor ctrlrange="-1 1" ctrllimited="true" gear="50"/>
   </default>
   
   <asset>
@@ -41,9 +44,10 @@
     <light name="main_light" pos="0 0 1.5" dir="0 0 -1" diffuse="1 1 1" specular="0.3 0.3 0.3" castshadow="true"/>
     <light name="fill_light" pos="0.5 0.5 1" dir="-0.5 -0.5 -1" diffuse="0.3 0.3 0.3"/>
     
-    <camera name="main_cam" pos="0.4 0.4 0.3" xyaxes="-0.707 0.707 0 -0.408 -0.408 0.816" fovy="45"/>
-    <camera name="front_cam" pos="0.5 0 0.15" xyaxes="0 1 0 0 0 1" fovy="45"/>
-    <camera name="top_cam" pos="0 0 0.6" xyaxes="1 0 0 0 1 0" fovy="45"/>
+    <!-- Better camera angles for visualization -->
+    <camera name="main_cam" pos="0.35 0.35 0.35" xyaxes="-0.707 0.707 0 -0.408 -0.408 0.816" fovy="60"/>
+    <camera name="front_cam" pos="0.45 0 0.15" xyaxes="0 1 0 0 0 1" fovy="60"/>
+    <camera name="top_cam" pos="0 0 0.5" xyaxes="1 0 0 0 1 0" fovy="60"/>
     
     <geom name="floor" type="plane" size="0.5 0.5 0.1" pos="0 0 -0.1" material="grid_mat"/>
     
@@ -63,17 +67,17 @@
         
         <body name="link_1" pos="0 0 0.021">
           <inertial pos="0 0 0" mass="0.066" diaginertia="6.25e-6 3.13e-5 2.9e-5"/>
-          <joint name="joint_1" type="hinge" axis="0 1 0" range="-0.196 1.8"/>
+          <joint name="joint_1" type="hinge" axis="0 -1 0" range="-0.196 1.8"/>
           <geom name="link_1_geom" type="mesh" mesh="l2" pos="-0.025 -0.019 0.145" euler="0 0 -1.57" material="black"/>
           
           <body name="link_2" pos="0 0 0.051">
             <inertial pos="0 0 0" mass="0.0366" diaginertia="3.81e-6 1.45e-5 1.29e-5"/>
-            <joint name="joint_2" type="hinge" axis="0 1 0" range="-0.174 1.709"/>
+            <joint name="joint_2" type="hinge" axis="0 -1 0" range="-0.174 1.709"/>
             <geom name="link_2_geom" type="mesh" mesh="l3" pos="-0.025 -0.019 0.0945" euler="0 0 -1.57" material="black"/>
             
             <body name="link_3" pos="0 0 0.0384">
               <inertial pos="0 0 0" mass="0.00569" diaginertia="1.18e-6 2.4e-6 1.67e-6"/>
-              <joint name="joint_3" type="hinge" axis="0 1 0" range="-0.227 1.618"/>
+              <joint name="joint_3" type="hinge" axis="0 -1 0" range="-0.227 1.618"/>
               <geom name="link_3_geom" type="mesh" mesh="l4" pos="-0.025 -0.019 0.0561" euler="0 0 -1.57" material="black"/>
               
               <body name="fingertip_0" pos="0 0 0.0267">
@@ -93,17 +97,17 @@
         
         <body name="link_5" pos="0 0 0.021">
           <inertial pos="0 0 0" mass="0.066" diaginertia="6.25e-6 3.13e-5 2.9e-5"/>
-          <joint name="joint_5" type="hinge" axis="0 1 0" range="-0.196 1.8"/>
+          <joint name="joint_5" type="hinge" axis="0 -1 0" range="-0.196 1.8"/>
           <geom name="link_5_geom" type="mesh" mesh="l2" pos="-0.025 -0.019 0.145" euler="0 0 -1.57" material="black"/>
           
           <body name="link_6" pos="0 0 0.051">
             <inertial pos="0 0 0" mass="0.0366" diaginertia="3.81e-6 1.45e-5 1.29e-5"/>
-            <joint name="joint_6" type="hinge" axis="0 1 0" range="-0.174 1.709"/>
+            <joint name="joint_6" type="hinge" axis="0 -1 0" range="-0.174 1.709"/>
             <geom name="link_6_geom" type="mesh" mesh="l3" pos="-0.025 -0.019 0.0945" euler="0 0 -1.57" material="black"/>
             
             <body name="link_7" pos="0 0 0.0384">
               <inertial pos="0 0 0" mass="0.00569" diaginertia="1.18e-6 2.4e-6 1.67e-6"/>
-              <joint name="joint_7" type="hinge" axis="0 1 0" range="-0.227 1.618"/>
+              <joint name="joint_7" type="hinge" axis="0 -1 0" range="-0.227 1.618"/>
               <geom name="link_7_geom" type="mesh" mesh="l4" pos="-0.025 -0.019 0.0561" euler="0 0 -1.57" material="black"/>
               
               <body name="fingertip_1" pos="0 0 0.0267">
@@ -123,17 +127,17 @@
         
         <body name="link_9" pos="0 0 0.021">
           <inertial pos="0 0 0" mass="0.066" diaginertia="6.25e-6 3.13e-5 2.9e-5"/>
-          <joint name="joint_9" type="hinge" axis="0 1 0" range="-0.196 1.8"/>
+          <joint name="joint_9" type="hinge" axis="0 -1 0" range="-0.196 1.8"/>
           <geom name="link_9_geom" type="mesh" mesh="l2" pos="-0.025 -0.019 0.145" euler="0 0 -1.57" material="black"/>
           
           <body name="link_10" pos="0 0 0.051">
             <inertial pos="0 0 0" mass="0.0366" diaginertia="3.81e-6 1.45e-5 1.29e-5"/>
-            <joint name="joint_10" type="hinge" axis="0 1 0" range="-0.174 1.709"/>
+            <joint name="joint_10" type="hinge" axis="0 -1 0" range="-0.174 1.709"/>
             <geom name="link_10_geom" type="mesh" mesh="l3" pos="-0.025 -0.019 0.0945" euler="0 0 -1.57" material="black"/>
             
             <body name="link_11" pos="0 0 0.0384">
               <inertial pos="0 0 0" mass="0.00569" diaginertia="1.18e-6 2.4e-6 1.67e-6"/>
-              <joint name="joint_11" type="hinge" axis="0 1 0" range="-0.227 1.618"/>
+              <joint name="joint_11" type="hinge" axis="0 -1 0" range="-0.227 1.618"/>
               <geom name="link_11_geom" type="mesh" mesh="l4" pos="-0.025 -0.019 0.0561" euler="0 0 -1.57" material="black"/>
               
               <body name="fingertip_2" pos="0 0 0.0267">
@@ -176,7 +180,7 @@
       </body>
     </body>
     
-    <body name="object" pos="0 0 0.08">
+    <body name="object" pos="0.05 0 0.095">
       <freejoint name="object_joint"/>
       <geom name="object_geom" type="sphere" size="0.025" mass="0.05" material="object_mat" contype="1" conaffinity="1"/>
     </body>
