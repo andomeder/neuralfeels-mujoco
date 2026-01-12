@@ -17,3 +17,4 @@ uv.lock
 *.egg-info/
 .coverage
 =*
+MUJOCO_LOG.TXT

@@ -475,7 +475,11 @@ def run_live_demo(
         use_open3d: Whether to show Open3D 3D viewer
     """
     print("Initializing environment...")
-    env = AllegroHandEnv(render_mode="rgb_array", use_grasp_stabilizer=True)
+    env = AllegroHandEnv(
+        render_mode="rgb_array",
+        use_grasp_stabilizer=True,
+        max_episode_steps=max_steps,
+    )
     grasp_base = np.array([0, 0.6, 0.6, 0.5] * 3 + [0.6, 0.5, 0.6, 0.5])
     gentle_amplitude = np.array([0.02, 0.08, 0.08, 0.08] * 4)
     policy = RotationPolicy(amplitude=gentle_amplitude, base_position=grasp_base)
