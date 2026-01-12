@@ -1,0 +1,18 @@
+<mujoco>
+  <!-- Hammer (composite: box head + cylinder handle) -->
+  <worldbody>
+    <body name="object" pos="0 0 0.1">
+      <freejoint name="object_joint"/>
+      <inertial pos="0 0 0" mass="0.4" diaginertia="8e-4 8e-4 1e-4"/>
+      <!-- Head (box) -->
+      <geom name="object_geom" type="box" size="0.015 0.04 0.015" 
+            pos="0 0 0.05"
+            rgba="0.4 0.4 0.4 1" contype="1" conaffinity="1" 
+            friction="1 0.5 0.01"/>
+      <!-- Handle (cylinder) -->
+      <geom name="handle" type="cylinder" size="0.01 0.05" 
+            rgba="0.6 0.4 0.2 1" contype="1" conaffinity="1" 
+            friction="1 0.5 0.01"/>
+    </body>
+  </worldbody>
+</mujoco>

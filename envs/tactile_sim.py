@@ -86,7 +86,13 @@ def get_tactile_from_mujoco(
         for finger_idx, tactile_geom_id in enumerate(tactile_geom_ids):
             if geom1 == tactile_geom_id or geom2 == tactile_geom_id:
                 contact_pos = contact.pos.copy()
-                force_magnitude = np.linalg.norm(contact.frame[:3])
+                # Get contact force from MuJoCo contact solver
+                # contact.frame is the contact frame basis, not force
+                import mujoco
+
+                force = np.zeros(6)
+                mujoco.mj_contactForce(model, data, contact_idx, force)
+                force_magnitude = np.linalg.norm(force[:3])  # Normal + tangent forces
 
                 finger_contacts[finger_idx][0].append(contact_pos)
                 finger_contacts[finger_idx][1].append(force_magnitude)

@@ -1,0 +1,12 @@
+<mujoco>
+  <!-- Cylinder (like soup can: 7cm diameter, 10cm height) -->
+  <worldbody>
+    <body name="object" pos="0 0 0.1">
+      <freejoint name="object_joint"/>
+      <inertial pos="0 0 0" mass="0.35" diaginertia="4e-4 4e-4 2e-4"/>
+      <geom name="object_geom" type="cylinder" size="0.035 0.05" 
+            rgba="0.7 0.2 0.2 1" contype="1" conaffinity="1" 
+            friction="1 0.5 0.01"/>
+    </body>
+  </worldbody>
+</mujoco>

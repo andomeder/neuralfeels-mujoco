@@ -111,13 +111,15 @@ def test_stabilizer_monitors_contact():
 
     env.reset()
 
-    force_variance_list = []
+    force_readings = []
     for _ in range(50):
         action = np.random.uniform(-0.3, 0.3, 16)
         obs, reward, terminated, truncated, info = env.step(action)
 
         forces = info["contact_forces"]
-        force_variance_list.append(forces.var())
+        force_readings.append(forces.copy())
 
-    avg_variance = np.mean(force_variance_list)
-    assert avg_variance >= 0
+    force_readings = np.array(force_readings)
+    assert force_readings.shape == (50, 4)
+    assert np.all(force_readings >= 0)
+    assert np.all(force_readings <= 1.0)

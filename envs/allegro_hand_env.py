@@ -24,6 +24,17 @@ class AllegroHandEnv(gym.Env):
         "fingertip_3_tactile",
     ]
 
+    # Available object types (primitives mimicking YCB shapes)
+    OBJECT_SET = [
+        "sphere",  # Tennis ball-like
+        "box",  # Cracker box-like
+        "cylinder",  # Soup can-like
+        "capsule",  # Banana-like
+        "ellipsoid",  # Apple-like
+        "mug",  # Mug with handle
+        "hammer",  # Tool-like
+    ]
+
     def __init__(
         self,
         render_mode: str | None = "rgb_array",
@@ -34,6 +45,8 @@ class AllegroHandEnv(gym.Env):
         stabilizer_kp: float = 2.0,
         stabilizer_kd: float = 0.1,
         target_force: float = 0.3,
+        object_name: str = "sphere",
+        randomize_object: bool = False,
     ):
         super().__init__()
 
@@ -43,6 +56,12 @@ class AllegroHandEnv(gym.Env):
         self.frame_skip = sim_freq // control_freq
         self.max_episode_steps = max_episode_steps
         self._step_count = 0
+
+        if object_name not in self.OBJECT_SET:
+            raise ValueError(f"Unknown object '{object_name}'. Choose from {self.OBJECT_SET}")
+        self.object_name = object_name
+        self.randomize_object = randomize_object
+        self._current_object = object_name
 
         self.use_grasp_stabilizer = use_grasp_stabilizer
         self._grasp_stabilizer = None
@@ -54,9 +73,8 @@ class AllegroHandEnv(gym.Env):
                 kd=stabilizer_kd,
             )
 
-        assets_path = Path(__file__).parent / "assets" / "scene.xml"
-        self.model = mujoco.MjModel.from_xml_path(str(assets_path))
-        self.data = mujoco.MjData(self.model)
+        self.assets_path = Path(__file__).parent / "assets"
+        self.model, self.data = self._load_scene_with_object(self._current_object)
 
         self.model.opt.timestep = 1.0 / sim_freq
 
@@ -94,6 +112,37 @@ class AllegroHandEnv(gym.Env):
         self._renderer = None
         if render_mode == "rgb_array":
             self._renderer = mujoco.Renderer(self.model, self.IMG_SIZE, self.IMG_SIZE)
+
+    def _load_scene_with_object(self, object_name: str) -> tuple:
+        import xml.etree.ElementTree as ET
+
+        scene_path = self.assets_path / "scene.xml"
+        object_path = self.assets_path / "objects" / f"{object_name}.xml"
+
+        scene_tree = ET.parse(scene_path)
+        scene_root = scene_tree.getroot()
+
+        object_tree = ET.parse(object_path)
+        object_worldbody = object_tree.find("worldbody")
+
+        scene_worldbody = scene_root.find("worldbody")
+
+        existing_object = scene_worldbody.find("./body[@name='object']")
+        if existing_object is not None:
+            scene_worldbody.remove(existing_object)
+
+        for object_body in object_worldbody.findall("body"):
+            scene_worldbody.append(object_body)
+
+        tmp_scene_path = self.assets_path / f"_tmp_scene_{object_name}.xml"
+        scene_tree.write(str(tmp_scene_path), encoding="unicode")
+
+        model = mujoco.MjModel.from_xml_path(str(tmp_scene_path))
+        data = mujoco.MjData(model)
+
+        tmp_scene_path.unlink()
+
+        return model, data
 
     def _get_obs(self) -> dict[str, np.ndarray]:
         qpos = self.data.qpos[: self.NUM_JOINTS].astype(np.float32)
@@ -140,7 +189,12 @@ class AllegroHandEnv(gym.Env):
                     u = np.clip(u, 0, self.TACTILE_RES - 1)
                     v = np.clip(v, 0, self.TACTILE_RES - 1)
 
-                    force_magnitude = np.linalg.norm(contact.frame[:3])
+                    # Get contact force from MuJoCo contact solver
+                    # contact.frame is the contact frame basis, not force
+                    # Use mj_contactForce to get actual contact forces
+                    force = np.zeros(6)
+                    mujoco.mj_contactForce(self.model, self.data, contact_idx, force)
+                    force_magnitude = np.linalg.norm(force[:3])  # Normal + tangent forces
                     depth = min(force_magnitude / 10.0, 1.0)
 
                     tactile[finger_idx, v, u] = max(tactile[finger_idx, v, u], depth)
@@ -154,6 +208,7 @@ class AllegroHandEnv(gym.Env):
         info = {
             "object_pos": object_pos,
             "object_quat": object_quat,
+            "object_name": self._current_object,
             "step_count": self._step_count,
         }
 
@@ -176,6 +231,19 @@ class AllegroHandEnv(gym.Env):
         options: dict | None = None,
     ) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
         super().reset(seed=seed)
+
+        if self.randomize_object:
+            self._current_object = self.np_random.choice(self.OBJECT_SET)
+            self.model, self.data = self._load_scene_with_object(self._current_object)
+            self.model.opt.timestep = 1.0 / self.sim_freq
+            self._tactile_geom_ids = [
+                mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_GEOM, name)
+                for name in self.TACTILE_GEOM_NAMES
+            ]
+            self._object_body_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "object")
+            if self._renderer is not None:
+                self._renderer.close()
+                self._renderer = mujoco.Renderer(self.model, self.IMG_SIZE, self.IMG_SIZE)
 
         mujoco.mj_resetData(self.model, self.data)
 
@@ -202,8 +270,12 @@ class AllegroHandEnv(gym.Env):
         self.data.qpos[: self.NUM_JOINTS] = init_qpos
 
         object_qpos_start = self.NUM_JOINTS
-        self.data.qpos[object_qpos_start : object_qpos_start + 3] = [0, 0, 0.1]
-        self.data.qpos[object_qpos_start + 3 : object_qpos_start + 7] = [1, 0, 0, 0]
+        object_pos = np.array([0, 0, 0.1])
+        object_pos[:2] += self.np_random.uniform(-0.01, 0.01, size=2)
+        self.data.qpos[object_qpos_start : object_qpos_start + 3] = object_pos
+
+        random_quat = self._random_quaternion()
+        self.data.qpos[object_qpos_start + 3 : object_qpos_start + 7] = random_quat
 
         mujoco.mj_forward(self.model, self.data)
 
@@ -213,6 +285,19 @@ class AllegroHandEnv(gym.Env):
             self._grasp_stabilizer.reset()
 
         return self._get_obs(), self._get_info()
+
+    def _random_quaternion(self) -> np.ndarray:
+        u1, u2, u3 = self.np_random.uniform(0, 1, size=3)
+        sqrt1_u1 = np.sqrt(1 - u1)
+        sqrtu1 = np.sqrt(u1)
+        return np.array(
+            [
+                sqrt1_u1 * np.sin(2 * np.pi * u2),
+                sqrt1_u1 * np.cos(2 * np.pi * u2),
+                sqrtu1 * np.sin(2 * np.pi * u3),
+                sqrtu1 * np.cos(2 * np.pi * u3),
+            ]
+        )
 
     def step(
         self, action: np.ndarray

@@ -52,10 +52,10 @@ make dev-setup  # automatic
 make install    # just dependencies
 ```
 
-Theseus (pose optimization) needs special handling:
+Theseus (pose optimization) requires special handling:
 ```bash
-pip install Cython scikit-sparse --no-build-isolation
-pip install theseus-ai --no-build-isolation
+uv pip install Cython scikit-sparse --no-build-isolation
+uv pip install theseus-ai --no-build-isolation
 ```
 
 Theseus runs on CPU only. This is expected.
@@ -78,6 +78,39 @@ make demo                      # live visualization
 make video STEPS=200           # generate video
 ```
 
+### Object Selection
+
+The environment supports 7 different objects (MuJoCo primitives mimicking YCB shapes):
+
+| Object | Shape | Description |
+|--------|-------|-------------|
+| `sphere` | Sphere | Tennis ball-like (default) |
+| `box` | Box | Cracker box (6x10x2 cm) |
+| `cylinder` | Cylinder | Soup can (7cm diameter, 10cm height) |
+| `capsule` | Capsule | Banana-like elongated shape |
+| `ellipsoid` | Ellipsoid | Apple-like asymmetric sphere |
+| `mug` | Composite | Mug with handle |
+| `hammer` | Composite | Tool with box head + cylinder handle |
+
+```python
+from envs.allegro_hand_env import AllegroHandEnv
+
+# Single object
+env = AllegroHandEnv(object_name="box")
+obs, info = env.reset()
+
+# Random object each episode
+env = AllegroHandEnv(randomize_object=True)
+for episode in range(10):
+    obs, info = env.reset()
+    print(f"Object: {info['object_name']}")
+```
+
+Generate object showcase:
+```bash
+python scripts/visualize_objects.py --output outputs/objects.png
+```
+
 ## Structure
 
 ```
@@ -97,7 +130,7 @@ perception/
 scripts/
   demo.py, train.py, eval.py, collect_data.py
 
-tests/                   # 77 tests
+tests/                   # 104 tests
 ```
 
 ## Technical Details
@@ -113,8 +146,8 @@ tests/                   # 77 tests
 ## Known Limitations
 
 - SDF optimization in pose graph disabled (XPU/CPU device mixing issues with Theseus)
-- Uses primitive sphere; YCB objects not yet integrated
 - Open-loop rotation policy drops objects sometimes
+- Objects are MuJoCo primitives, not actual YCB meshes (sufficient for diversity demonstration)
 
 ## References
 
@@ -127,7 +160,7 @@ tests/                   # 77 tests
 ```bash
 make format  # black + ruff
 make lint
-make test    # 77 tests
+make test    # 104 tests
 make check   # all of the above
 ```
 

@@ -1,0 +1,18 @@
+<mujoco>
+  <!-- Mug (composite: cylinder body + handle) -->
+  <worldbody>
+    <body name="object" pos="0 0 0.1">
+      <freejoint name="object_joint"/>
+      <inertial pos="0 0 0" mass="0.25" diaginertia="5e-4 5e-4 2e-4"/>
+      <!-- Main cylinder body -->
+      <geom name="object_geom" type="cylinder" size="0.03 0.04" 
+            rgba="0.3 0.5 0.7 1" contype="1" conaffinity="1" 
+            friction="1 0.5 0.01"/>
+      <!-- Handle (capsule offset to side) -->
+      <geom name="handle" type="capsule" size="0.008 0.025" 
+            pos="0.035 0 0" euler="0 1.57 0"
+            rgba="0.3 0.5 0.7 1" contype="1" conaffinity="1" 
+            friction="1 0.5 0.01"/>
+    </body>
+  </worldbody>
+</mujoco>
