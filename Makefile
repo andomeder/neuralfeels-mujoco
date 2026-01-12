@@ -151,6 +151,15 @@ eval: ## Evaluate on test set
 		$(if $(GT_POSES),--gt-poses $(GT_POSES),)
 	@printf "${GREEN}✓ Evaluation complete! Check outputs/metrics/${NC}\n"
 
+ablation: ## Run ablation study (vision-only, tactile-only, visuotactile)
+	@printf "${BLUE}Running ablation study...${NC}\n"
+	@printf "${YELLOW}Usage: make ablation STEPS=100 OBJECTS='sphere box cylinder'${NC}\n"
+	@uv run python scripts/ablation.py \
+		--steps $(or $(STEPS),100) \
+		--output $(or $(OUTPUT),outputs/ablation) \
+		$(if $(OBJECTS),--objects $(OBJECTS),)
+	@printf "${GREEN}✓ Ablation study complete! Check outputs/ablation/${NC}\n"
+
 demo: ## Run live visualization
 	@printf "${BLUE}Starting live demo...${NC}\n"
 	@printf "${YELLOW}Usage: make demo STEPS=200 NO_PERCEPTION=1${NC}\n"

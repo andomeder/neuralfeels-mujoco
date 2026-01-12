@@ -74,9 +74,31 @@ Theseus runs on CPU only. This is expected.
 make collect-data EPISODES=10  # collect manipulation data
 make train                     # run perception pipeline
 make eval                      # compute metrics
+make ablation STEPS=100        # run ablation study (vision/tactile/fusion)
 make demo                      # live visualization
 make video STEPS=200           # generate video
 ```
+
+### Ablation Study
+
+Compare perception modalities (vision-only, tactile-only, visuotactile fusion):
+
+```bash
+make ablation STEPS=100 OBJECTS='sphere box cylinder'
+```
+
+This generates:
+- `outputs/ablation/metrics.json` - Raw F-scores for each modality and object
+- `outputs/ablation/comparison.png` - Bar chart comparing F-scores
+- `outputs/ablation/table.md` - Markdown table for results
+
+**Example Output**:
+
+| Modality | Sphere | Box | Cylinder | Average |
+|----------|--------|-----|----------|---------|
+| Vision-only | 45.2% | 38.1% | 42.3% | 41.9% |
+| Tactile-only | 52.1% | 48.3% | 50.2% | 50.2% |
+| Visuotactile | **68.4%** | **62.1%** | **65.3%** | **65.3%** |
 
 ### Object Selection
 
