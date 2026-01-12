@@ -6,6 +6,8 @@ import mujoco
 import numpy as np
 from gymnasium import spaces
 
+from envs.grasp_controller import GraspStabilizer
+
 
 class AllegroHandEnv(gym.Env):
     metadata = {"render_modes": ["rgb_array", "human"], "render_fps": 20}
@@ -28,6 +30,10 @@ class AllegroHandEnv(gym.Env):
         control_freq: int = 20,
         sim_freq: int = 500,
         max_episode_steps: int = 200,
+        use_grasp_stabilizer: bool = False,
+        stabilizer_kp: float = 2.0,
+        stabilizer_kd: float = 0.1,
+        target_force: float = 0.3,
     ):
         super().__init__()
 
@@ -37,6 +43,16 @@ class AllegroHandEnv(gym.Env):
         self.frame_skip = sim_freq // control_freq
         self.max_episode_steps = max_episode_steps
         self._step_count = 0
+
+        self.use_grasp_stabilizer = use_grasp_stabilizer
+        self._grasp_stabilizer = None
+        if use_grasp_stabilizer:
+            self._grasp_stabilizer = GraspStabilizer(
+                num_fingers=self.NUM_FINGERS,
+                target_force=target_force,
+                kp=stabilizer_kp,
+                kd=stabilizer_kd,
+            )
 
         assets_path = Path(__file__).parent / "assets" / "scene.xml"
         self.model = mujoco.MjModel.from_xml_path(str(assets_path))
@@ -135,11 +151,23 @@ class AllegroHandEnv(gym.Env):
         object_pos = self.data.xpos[self._object_body_id].copy()
         object_quat = self.data.xquat[self._object_body_id].copy()
 
-        return {
+        info = {
             "object_pos": object_pos,
             "object_quat": object_quat,
             "step_count": self._step_count,
         }
+
+        if self._grasp_stabilizer is not None:
+            stabilizer_state = self._grasp_stabilizer.get_state()
+            info.update(
+                {
+                    "contact_forces": stabilizer_state["forces"],
+                    "drop_detected": stabilizer_state["drop_detected"],
+                    "no_contact_frames": stabilizer_state["no_contact_frames"],
+                }
+            )
+
+        return info
 
     def reset(
         self,
@@ -181,12 +209,22 @@ class AllegroHandEnv(gym.Env):
 
         self._step_count = 0
 
+        if self._grasp_stabilizer is not None:
+            self._grasp_stabilizer.reset()
+
         return self._get_obs(), self._get_info()
 
     def step(
         self, action: np.ndarray
     ) -> tuple[dict[str, np.ndarray], float, bool, bool, dict[str, Any]]:
         action = np.clip(action, -1.0, 1.0)
+
+        if self.use_grasp_stabilizer and self._grasp_stabilizer is not None:
+            tactile = self._get_tactile_obs()
+            grip_adjustment = self._grasp_stabilizer.compute_grip_adjustment(tactile)
+            action = action + grip_adjustment
+            action = np.clip(action, -1.0, 1.0)
+
         self.data.ctrl[:] = action
 
         for _ in range(self.frame_skip):
@@ -219,6 +257,13 @@ class AllegroHandEnv(gym.Env):
             self._renderer.update_scene(self.data, camera="main_cam")
             return self._renderer.render()
         return None
+
+    def get_contact_forces(self) -> np.ndarray:
+        """Get per-finger contact forces from tactile sensors."""
+        if self._grasp_stabilizer is None:
+            tactile = self._get_tactile_obs()
+            return np.array([tactile[i].sum() for i in range(self.NUM_FINGERS)])
+        return self._grasp_stabilizer.get_state()["forces"]
 
     def close(self):
         if self._renderer is not None:

@@ -4,7 +4,7 @@
 export PYTHONPATH=$(shell pwd)
 
 .PHONY: help install install-dev format lint test clean setup-env gpu-info
-.PHONY: collect-data train eval demo video replay docker-build docker-run
+.PHONY: collect-data train eval demo video replay demo-stabilizer docker-build docker-run
 .PHONY: setup-mise setup-uv dev-setup quick-test
 
 # Colors
@@ -176,6 +176,15 @@ replay: ## Replay a collected episode
 		--mode replay \
 		--episode $(or $(EPISODE),datasets/episode_000) \
 		$(if $(OUTPUT),--output $(OUTPUT),)
+
+demo-stabilizer: ## Demo grasp stabilizer (side-by-side or stabilizer-only)
+	@printf "${BLUE}Running grasp stabilizer demo...${NC}\n"
+	@printf "${YELLOW}Usage: make demo-stabilizer MODE=side_by_side STEPS=300${NC}\n"
+	@uv run python scripts/demo_stabilizer.py \
+		--mode $(or $(MODE),side_by_side) \
+		--steps $(or $(STEPS),300) \
+		$(if $(OUTPUT),--output $(OUTPUT),)
+	@printf "${GREEN}✓ Demo complete!${NC}\n"
 
 # =============================================================================
 # CODE QUALITY
