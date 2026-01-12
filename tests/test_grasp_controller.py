@@ -107,7 +107,7 @@ def test_slip_detection(stabilizer):
     slip = stabilizer.detect_slip(tactile2)
 
     assert slip.shape == (4,)
-    assert slip[0] == True
+    assert slip[0]
 
 
 def test_reset(stabilizer):

@@ -1,7 +1,6 @@
 """Tests for integrated perception pipeline."""
 
 import numpy as np
-import pytest
 
 
 class TestPerceptionConfig:
@@ -23,7 +22,7 @@ class TestVisuotactilePerception:
     """Tests for VisuotactilePerception pipeline."""
 
     def test_creation(self):
-        from perception.pipeline import VisuotactilePerception, PerceptionConfig
+        from perception.pipeline import PerceptionConfig, VisuotactilePerception
 
         config = PerceptionConfig(depth_model=None)  # Skip DPT for faster tests
         pipeline = VisuotactilePerception(config)
@@ -32,7 +31,7 @@ class TestVisuotactilePerception:
         assert not pipeline._initialized
 
     def test_initialize(self):
-        from perception.pipeline import VisuotactilePerception, PerceptionConfig
+        from perception.pipeline import PerceptionConfig, VisuotactilePerception
 
         config = PerceptionConfig(depth_model=None)
         pipeline = VisuotactilePerception(config)
@@ -46,7 +45,7 @@ class TestVisuotactilePerception:
         assert pipeline.state.current_pose is not None
 
     def test_initialize_with_custom_pose(self):
-        from perception.pipeline import VisuotactilePerception, PerceptionConfig
+        from perception.pipeline import PerceptionConfig, VisuotactilePerception
 
         config = PerceptionConfig(depth_model=None)
         pipeline = VisuotactilePerception(config)
@@ -59,7 +58,7 @@ class TestVisuotactilePerception:
         assert np.allclose(pipeline.state.current_pose[:3, 3], [0.1, 0.2, 0.3])
 
     def test_get_pose(self):
-        from perception.pipeline import VisuotactilePerception, PerceptionConfig
+        from perception.pipeline import PerceptionConfig, VisuotactilePerception
 
         config = PerceptionConfig(depth_model=None)
         pipeline = VisuotactilePerception(config)
@@ -71,7 +70,7 @@ class TestVisuotactilePerception:
         assert pose.shape == (4, 4)
 
     def test_get_mesh_before_processing(self):
-        from perception.pipeline import VisuotactilePerception, PerceptionConfig
+        from perception.pipeline import PerceptionConfig, VisuotactilePerception
 
         config = PerceptionConfig(depth_model=None)
         pipeline = VisuotactilePerception(config)
@@ -136,11 +135,10 @@ class TestCreatePerceptionPipeline:
 
     def test_pipeline_without_dpt(self):
         from perception.pipeline import (
-            VisuotactilePerception,
             PerceptionConfig,
+            VisuotactilePerception,
             create_default_camera_intrinsics,
         )
-        from perception.depth_fusion import create_default_camera_intrinsics
 
         config = PerceptionConfig(depth_model=None, device="cpu")
         pipeline = VisuotactilePerception(config)
@@ -156,7 +154,7 @@ class TestTransformPoints:
     """Tests for point transformation utility."""
 
     def test_identity_transform(self):
-        from perception.pipeline import VisuotactilePerception, PerceptionConfig
+        from perception.pipeline import PerceptionConfig, VisuotactilePerception
 
         config = PerceptionConfig(depth_model=None)
         pipeline = VisuotactilePerception(config)
@@ -170,7 +168,7 @@ class TestTransformPoints:
         assert np.allclose(result, points)
 
     def test_translation_transform(self):
-        from perception.pipeline import VisuotactilePerception, PerceptionConfig
+        from perception.pipeline import PerceptionConfig, VisuotactilePerception
 
         config = PerceptionConfig(depth_model=None)
         pipeline = VisuotactilePerception(config)
@@ -185,7 +183,7 @@ class TestTransformPoints:
         assert np.allclose(result, [[1, 2, 3]])
 
     def test_empty_points(self):
-        from perception.pipeline import VisuotactilePerception, PerceptionConfig
+        from perception.pipeline import PerceptionConfig, VisuotactilePerception
 
         config = PerceptionConfig(depth_model=None)
         pipeline = VisuotactilePerception(config)

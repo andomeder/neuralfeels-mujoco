@@ -59,9 +59,9 @@ def run_episode(
         tactile_vis = visualize_tactile(
             tactile,
             finger_names=["Index", "Middle", "Ring", "Thumb"],
-            contact_forces=contact_forces / contact_forces.max()
-            if contact_forces.max() > 0
-            else None,
+            contact_forces=(
+                contact_forces / contact_forces.max() if contact_forces.max() > 0 else None
+            ),
         )
 
         frames.append(rgb)
@@ -162,7 +162,7 @@ def create_stabilizer_demo(
 
         cv2.putText(
             rgb_bgr,
-            f"Grasp Stabilizer Active",
+            "Grasp Stabilizer Active",
             (10, 20),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.6,

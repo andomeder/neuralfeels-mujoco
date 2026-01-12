@@ -186,7 +186,7 @@ def get_fingertip_poses(env: AllegroHandEnv) -> list[SE3]:
     """
     fingertip_poses = []
 
-    for geom_id in env.fingertip_geom_ids:
+    for geom_id in env._tactile_geom_ids:
         # Get geom position and rotation
         pos = env.data.geom_xpos[geom_id].copy()
         mat = env.data.geom_xmat[geom_id].reshape(3, 3).copy()
@@ -197,18 +197,14 @@ def get_fingertip_poses(env: AllegroHandEnv) -> list[SE3]:
 
 
 def get_camera_pose() -> SE3:
-    """Get camera pose (fixed in environment).
-
-    Returns:
-        SE3 camera pose in world frame
-    """
-    # Camera is at fixed position looking at hand
-    # From envs/assets/scene.xml camera position
-    # This is a simplification - in reality would extract from MuJoCo
-    return SE3(
-        rotation=np.eye(3, dtype=np.float32),
-        translation=np.array([0.0, 0.0, 0.5], dtype=np.float32),
-    )
+    """Get camera pose from scene.xml main_cam definition."""
+    cam_pos = np.array([0.4, 0.4, 0.3], dtype=np.float32)
+    xyaxes = np.array([-0.707, 0.707, 0, -0.408, -0.408, 0.816], dtype=np.float32)
+    x_axis = xyaxes[:3]
+    y_axis = xyaxes[3:]
+    z_axis = np.cross(x_axis, y_axis)
+    rotation = np.column_stack([x_axis, y_axis, z_axis]).astype(np.float32)
+    return SE3(rotation=rotation, translation=cam_pos)
 
 
 def run_perception_trial(
@@ -233,11 +229,9 @@ def run_perception_trial(
     # Configure modality
     if modality == "vision_only":
         use_visual = True
-        use_tactile = False
         depth_model = "Intel/dpt-hybrid-midas"
     elif modality == "tactile_only":
         use_visual = False
-        use_tactile = True
         depth_model = None  # No DPT model needed
     elif modality == "visuotactile":
         use_visual = True
@@ -259,7 +253,26 @@ def run_perception_trial(
 
     perception = VisuotactilePerception(config)
     camera_intrinsics = create_default_camera_intrinsics(width=224, height=224, fov_degrees=45.0)
-    perception.initialize(camera_intrinsics=camera_intrinsics)
+
+    # Run simulation - get object pose BEFORE initializing perception
+    obs, info = env.reset()
+    camera_pose = get_camera_pose()
+
+    object_pos = info.get("object_pos", np.array([0.0, 0.0, 0.15], dtype=np.float32))
+    object_quat = info.get("object_quat", np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float32))
+
+    # Create object pose matrix for centering SDF training
+    from scipy.spatial.transform import Rotation
+
+    R = Rotation.from_quat(
+        [object_quat[1], object_quat[2], object_quat[3], object_quat[0]]
+    ).as_matrix()
+    object_pose = np.eye(4, dtype=np.float32)
+    object_pose[:3, :3] = R
+    object_pose[:3, 3] = object_pos
+
+    # Initialize perception with object pose so points get centered
+    perception.initialize(camera_intrinsics=camera_intrinsics, initial_pose=object_pose)
 
     # Override depth fusion settings based on modality
     if perception.depth_fusion is not None:
@@ -270,10 +283,7 @@ def run_perception_trial(
             perception.depth_fusion.visual_weight = 0.0
             perception.depth_fusion.tactile_weight = 1.0
         # visuotactile uses default weights (0.3, 1.0)
-
-    # Run simulation
-    obs, info = env.reset()
-    camera_pose = get_camera_pose()
+    cam_to_obj_dist = np.linalg.norm(object_pos - camera_pose.translation)
 
     for step in range(steps):
         # Neutral action (let grasp stabilizer handle control)
@@ -290,6 +300,7 @@ def run_perception_trial(
                 tactile=obs["tactile"],
                 fingertip_poses=fingertip_poses,
                 camera_pose=camera_pose,
+                depth_scale=cam_to_obj_dist,
             )
         except Exception as e:
             print(f"  Warning: Frame {step} failed: {e}")

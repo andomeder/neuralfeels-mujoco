@@ -1,5 +1,6 @@
-import pytest
 import numpy as np
+import pytest
+
 from envs.allegro_hand_env import AllegroHandEnv
 
 

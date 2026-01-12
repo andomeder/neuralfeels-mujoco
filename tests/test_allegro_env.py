@@ -1,7 +1,3 @@
-import numpy as np
-import pytest
-
-
 def test_env_creation():
     from envs.allegro_hand_env import AllegroHandEnv
 

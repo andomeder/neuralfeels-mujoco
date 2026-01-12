@@ -22,7 +22,6 @@ from perception.depth_fusion import (
     SE3,
     create_default_camera_intrinsics,
 )
-from perception.metrics import evaluate_trajectory, f_score, sample_mesh_surface
 from perception.neural_sdf import NeuralSDF, extract_mesh, sdf_loss
 from perception.pipeline import PerceptionConfig, VisuotactilePerception
 from src.utils.gpu_utils import get_device

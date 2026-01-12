@@ -57,6 +57,20 @@ def test_sdf_loss():
     assert "free_space" in losses
 
 
+def test_free_space_loss_provides_gradient_when_negative():
+    from perception.neural_sdf import free_space_loss
+
+    sdf_pred = torch.full((32,), -0.1, requires_grad=True)
+    target = torch.full((32,), 0.05)
+
+    loss = free_space_loss(sdf_pred, target)
+    loss.backward()
+
+    assert sdf_pred.grad is not None
+    assert torch.isfinite(sdf_pred.grad).all()
+    assert (sdf_pred.grad.abs() > 0).any()
+
+
 if __name__ == "__main__":
     test_neural_sdf_creation()
     print("✓ test_neural_sdf_creation passed")

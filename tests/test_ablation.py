@@ -114,13 +114,7 @@ class TestMeshQuality:
             edge2 = v2 - v0
             normal = np.cross(edge1, edge2)
 
-            centroid = (v0 + v1 + v2) / 3
-
-            if np.linalg.norm(normal) > 1e-6:
-                normal_normalized = normal / np.linalg.norm(normal)
-                centroid_normalized = centroid / (np.linalg.norm(centroid) + 1e-8)
-
-                dot = np.dot(normal_normalized, centroid_normalized)
+            assert np.linalg.norm(normal) > 1e-6
 
     def test_cylinder_caps_exist(self):
         """Verify cylinder has top and bottom caps."""

@@ -11,7 +11,6 @@ Usage:
 """
 
 import argparse
-import json
 import time
 from pathlib import Path
 from typing import Optional
@@ -21,14 +20,9 @@ import numpy as np
 
 from envs.allegro_hand_env import AllegroHandEnv
 from envs.tactile_sim import visualize_tactile
-from perception.depth_fusion import (
-    SE3,
-    CameraIntrinsics,
-    create_default_camera_intrinsics,
-    visualize_depth_fusion,
-)
-from perception.metrics import f_score, sample_mesh_surface
-from perception.neural_sdf import NeuralSDF, extract_mesh
+from perception.depth_fusion import SE3, create_default_camera_intrinsics
+from perception.pipeline import PerceptionConfig, VisuotactilePerception
+from scripts.collect_data import RotationPolicy
 
 
 def create_title_card(
@@ -104,11 +98,6 @@ def create_metrics_card(
 
         frames.append(frame)
     return frames
-
-
-from perception.pipeline import PerceptionConfig, VisuotactilePerception
-from scripts.collect_data import RotationPolicy
-from src.utils.gpu_utils import get_device
 
 
 class DemoVisualizer:
@@ -649,10 +638,6 @@ def run_replay_demo(
     # Load episode data
     rgb_files = sorted((episode_path / "rgb").glob("*.png"))
     tactile_files = sorted((episode_path / "tactile").glob("*.npy"))
-    qpos = np.load(episode_path / "qpos.npy")
-
-    with open(episode_path / "metadata.json") as f:
-        metadata = json.load(f)
 
     print(f"Episode has {len(rgb_files)} frames")
 
@@ -743,7 +728,7 @@ def run_portfolio_video(
 
         fingertip_poses = get_fingertip_poses(env)
         camera_pose = get_camera_pose(env)
-        state = perception.process_frame(rgb, tactile, fingertip_poses, camera_pose)
+        perception.process_frame(rgb, tactile, fingertip_poses, camera_pose)
 
         mesh_render = None
         verts, faces = perception.get_mesh()

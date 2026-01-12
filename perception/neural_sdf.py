@@ -1,4 +1,5 @@
 import math
+from typing import cast
 
 import torch
 import torch.nn as nn
@@ -27,7 +28,8 @@ class PositionalEncoding(nn.Module):
         if self.include_input:
             encodings.append(x)
 
-        for freq in self.freq_bands:
+        freq_bands = cast(torch.Tensor, self.freq_bands)
+        for freq in freq_bands:
             encodings.append(torch.sin(freq * math.pi * x))
             encodings.append(torch.cos(freq * math.pi * x))
 
@@ -81,10 +83,8 @@ class NeuralSDF(nn.Module):
         hidden_dim: int,
     ):
         if layer_idx == num_layers - 1:
-            nn.init.normal_(
-                layer.weight, mean=math.sqrt(math.pi) / math.sqrt(hidden_dim), std=0.0001
-            )
-            nn.init.constant_(layer.bias, -0.5)
+            nn.init.normal_(layer.weight, mean=0.0, std=0.0001)
+            nn.init.constant_(layer.bias, 0.0)
         elif layer_idx == 0:
             nn.init.constant_(layer.bias, 0.0)
             nn.init.normal_(layer.weight, 0.0, math.sqrt(2) / math.sqrt(hidden_dim))
@@ -105,7 +105,9 @@ class NeuralSDF(nn.Module):
             if i < self.num_layers - 1:
                 x = F.softplus(x, beta=100)
 
-        return x.squeeze(-1)
+        learned = x.squeeze(-1)
+        sphere_sdf = torch.norm(points, dim=-1) - 0.05
+        return learned + sphere_sdf
 
     def gradient(self, points: torch.Tensor) -> torch.Tensor:
         points = points.requires_grad_(True)
@@ -132,7 +134,9 @@ def surface_loss(sdf_values: torch.Tensor) -> torch.Tensor:
 
 
 def free_space_loss(sdf_values: torch.Tensor, target_sdf: torch.Tensor) -> torch.Tensor:
-    return F.l1_loss(sdf_values, target_sdf)
+    distance_loss = F.l1_loss(sdf_values, target_sdf)
+    negative_penalty = torch.relu(-sdf_values).mean()
+    return distance_loss + 10.0 * negative_penalty
 
 
 def sdf_loss(
@@ -141,8 +145,8 @@ def sdf_loss(
     free_points: torch.Tensor,
     free_sdf: torch.Tensor,
     lambda_surface: float = 1.0,
-    lambda_free: float = 0.1,
-    lambda_eikonal: float = 0.1,
+    lambda_free: float = 1.0,
+    lambda_eikonal: float = 0.001,
 ) -> dict[str, torch.Tensor]:
     surface_sdf = model(surface_points)
     loss_surface = surface_loss(surface_sdf)
@@ -172,7 +176,6 @@ def extract_mesh(
     device: torch.device | str = "cpu",
 ) -> tuple:
     from skimage import measure
-    import numpy as np
 
     model.eval()
 

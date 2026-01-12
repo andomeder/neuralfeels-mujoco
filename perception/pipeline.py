@@ -9,22 +9,20 @@ This is the main entry point for the perception system during manipulation.
 """
 
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import torch
 
 from perception.depth_fusion import (
-    CameraIntrinsics,
-    MonocularDepthEstimator,
     SE3,
+    CameraIntrinsics,
     VisuotactileDepthFusion,
     create_default_camera_intrinsics,
     unproject_depth_to_points,
 )
 from perception.neural_sdf import NeuralSDF, extract_mesh, sdf_loss
-from perception.pose_tracking import PoseGraphOptimizer, PoseTrackingConfig, create_pose_tracker
+from perception.pose_tracking import PoseGraphOptimizer, PoseTrackingConfig
 from src.utils.gpu_utils import get_device
 
 
@@ -55,7 +53,10 @@ class PerceptionConfig:
 
     # Mesh extraction
     mesh_resolution: int = 128
-    mesh_bounds: tuple = (-0.1, 0.1)
+    mesh_bounds: tuple = (-0.3, 0.3)  # Covers hand workspace around origin
+
+    sdf_workspace_radius: float = 0.5
+    sdf_min_world_z: float = -0.1
 
     # Device
     device: str = "auto"
@@ -216,6 +217,7 @@ class VisuotactilePerception:
         fingertip_poses: list[SE3],
         camera_pose: SE3,
         depth: Optional[np.ndarray] = None,
+        depth_scale: Optional[float] = None,
     ) -> PerceptionState:
         """Process a single frame through the perception pipeline.
 
@@ -225,6 +227,7 @@ class VisuotactilePerception:
             fingertip_poses: SE3 poses of 4 fingertips in world frame
             camera_pose: SE3 pose of camera in world frame
             depth: Optional ground truth depth (H, W) for debugging
+            depth_scale: Optional scale factor for DPT depth to metric
 
         Returns:
             Updated PerceptionState with current pose and mesh
@@ -232,17 +235,33 @@ class VisuotactilePerception:
         if not self._initialized:
             raise RuntimeError("Pipeline not initialized. Call initialize() first.")
 
+        assert self.depth_fusion is not None
+        assert self.camera_intrinsics is not None
+        assert self.pose_tracker is not None
+        assert self.neural_sdf is not None
+        assert self.optimizer is not None
+
+        depth_fusion = self.depth_fusion
+        camera_intrinsics = self.camera_intrinsics
+        pose_tracker = self.pose_tracker
+
         self.state.frame_count += 1
 
         # 1. Depth fusion: combine visual and tactile depth
-        if depth is None and self.depth_fusion.depth_estimator is not None:
-            visual_depth = self.depth_fusion.estimate_visual_depth(rgb)
+        if depth is None and depth_fusion.depth_estimator is not None:
+            visual_depth = depth_fusion.estimate_visual_depth(rgb)
+            if depth_scale is not None and depth_scale > 0:
+                valid_mask = visual_depth > 0
+                if valid_mask.any():
+                    median = np.median(visual_depth[valid_mask])
+                    if median > 0:
+                        visual_depth = visual_depth * (depth_scale / median)
         else:
             visual_depth = (
                 depth
                 if depth is not None
                 else np.zeros(
-                    (self.camera_intrinsics.height, self.camera_intrinsics.width),
+                    (camera_intrinsics.height, camera_intrinsics.width),
                     dtype=np.float32,
                 )
             )
@@ -250,7 +269,7 @@ class VisuotactilePerception:
         # Split tactile into list
         tactile_list = [tactile[i] for i in range(tactile.shape[0])]
 
-        fused_depth, confidence = self.depth_fusion.fuse(
+        fused_depth, confidence = depth_fusion.fuse(
             visual_depth,
             tactile_list,
             fingertip_poses,
@@ -258,14 +277,14 @@ class VisuotactilePerception:
         )
 
         # 2. Unproject depth to 3D points
-        points_cam = unproject_depth_to_points(fused_depth, self.camera_intrinsics)
+        points_cam = unproject_depth_to_points(fused_depth, camera_intrinsics)
 
         # Transform points to world frame
         cam_T = camera_pose.to_matrix()
         points_world = self._transform_points(points_cam, cam_T)
 
         # 3. Pose tracking: update object pose estimate
-        self.state.current_pose = self.pose_tracker.add_frame(
+        self.state.current_pose = pose_tracker.add_frame(
             rgb=rgb,
             depth=fused_depth,
             points=points_world,
@@ -274,7 +293,8 @@ class VisuotactilePerception:
 
         # 4. Neural SDF training (every N frames)
         if self.state.frame_count % self.config.sdf_update_freq == 0:
-            loss = self._train_sdf_step(points_world)
+            points_world_sdf = self._filter_points_for_sdf(points_world, fingertip_poses)
+            loss = self._train_sdf_step(points_world_sdf)
             self.state.total_loss = loss
 
             # Check if we should add a keyframe
@@ -308,19 +328,34 @@ class VisuotactilePerception:
 
         return points_transformed[:, :3]
 
-    def _train_sdf_step(self, points_world: np.ndarray) -> float:
-        """Run one SDF training step.
+    def _filter_points_for_sdf(
+        self, points_world: np.ndarray, fingertip_poses: list[SE3]
+    ) -> np.ndarray:
+        if len(points_world) == 0:
+            return points_world
+
+        return points_world
+
+    def _train_sdf_step(self, points_world: np.ndarray, num_iterations: int = 5) -> float:
+        """Run SDF training steps.
 
         Args:
             points_world: Surface points in world frame (N, 3)
+            num_iterations: Number of training iterations per call
 
         Returns:
-            Training loss
+            Final training loss
         """
         if len(points_world) < 100:
             return 0.0
 
-        self.neural_sdf.train()
+        if self.neural_sdf is None or self.optimizer is None:
+            raise RuntimeError("SDF not initialized. Call initialize() first.")
+
+        neural_sdf = self.neural_sdf
+        optimizer = self.optimizer
+
+        neural_sdf.train()
 
         # Sample surface points
         num_surface = min(2048, len(points_world))
@@ -338,7 +373,6 @@ class VisuotactilePerception:
         free_points = np.random.uniform(bounds[0], bounds[1], size=(num_free, 3)).astype(np.float32)
 
         # Compute approximate SDF for free points (distance to nearest surface)
-        # This is an approximation - actual SDF would require full mesh
         free_sdf = np.linalg.norm(
             free_points[:, None, :] - surface_points[None, :, :], axis=-1
         ).min(axis=1)
@@ -348,19 +382,21 @@ class VisuotactilePerception:
         free_tensor = torch.tensor(free_points, device=self.device)
         free_sdf_tensor = torch.tensor(free_sdf, device=self.device)
 
-        # Compute loss
-        self.optimizer.zero_grad()
-        losses = sdf_loss(
-            self.neural_sdf,
-            surface_tensor,
-            free_tensor,
-            free_sdf_tensor,
-        )
+        total_loss = 0.0
+        for _ in range(num_iterations):
+            optimizer.zero_grad()
+            losses = sdf_loss(
+                neural_sdf,
+                surface_tensor,
+                free_tensor,
+                free_sdf_tensor,
+            )
 
-        losses["total"].backward()
-        self.optimizer.step()
+            losses["total"].backward()
+            optimizer.step()
+            total_loss = losses["total"].item()
 
-        return losses["total"].item()
+        return total_loss
 
     def _maybe_add_keyframe(
         self,
@@ -393,9 +429,11 @@ class VisuotactilePerception:
                 depth=depth.copy(),
                 tactile=tactile.copy(),
                 points=points.copy(),
-                pose=self.state.current_pose.copy()
-                if self.state.current_pose is not None
-                else np.eye(4),
+                pose=(
+                    self.state.current_pose.copy()
+                    if self.state.current_pose is not None
+                    else np.eye(4)
+                ),
                 loss=loss,
             )
             self.state.keyframes.append(keyframe)
@@ -407,6 +445,9 @@ class VisuotactilePerception:
 
     def _extract_mesh(self):
         """Extract mesh from neural SDF."""
+        if self.neural_sdf is None:
+            return
+
         try:
             verts, faces, normals = extract_mesh(
                 self.neural_sdf,

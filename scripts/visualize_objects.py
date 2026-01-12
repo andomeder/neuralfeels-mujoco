@@ -2,13 +2,14 @@
 """Visualize all available objects in the Allegro Hand environment."""
 
 import argparse
+
 import cv2
 import numpy as np
+
 from envs.allegro_hand_env import AllegroHandEnv
 
 
 def create_grid_visualization(images, labels, grid_size=(3, 3)):
-    n_images = len(images)
     rows, cols = grid_size
 
     h, w = images[0].shape[:2]

@@ -1,7 +1,6 @@
 """Tests for depth fusion module."""
 
 import numpy as np
-import pytest
 
 
 class TestCameraIntrinsics:
@@ -69,8 +68,8 @@ class TestTactileProjector:
 
     def test_empty_tactile(self):
         from perception.depth_fusion import (
-            CameraIntrinsics,
             SE3,
+            CameraIntrinsics,
             TactileProjector,
         )
 
@@ -99,8 +98,8 @@ class TestTactileProjector:
 
     def test_single_contact(self):
         from perception.depth_fusion import (
-            CameraIntrinsics,
             SE3,
+            CameraIntrinsics,
             TactileProjector,
         )
 
@@ -182,8 +181,8 @@ class TestVisuotactileDepthFusion:
 
     def test_fusion_no_tactile(self):
         from perception.depth_fusion import (
-            CameraIntrinsics,
             SE3,
+            CameraIntrinsics,
             VisuotactileDepthFusion,
         )
 

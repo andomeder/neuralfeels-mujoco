@@ -16,7 +16,6 @@ from typing import Optional
 import numpy as np
 
 from perception.metrics import (
-    add_s,
     chamfer_distance,
     evaluate_trajectory,
     f_score,

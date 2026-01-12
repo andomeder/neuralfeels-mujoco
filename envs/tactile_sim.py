@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
-
 TACTILE_RES = 32
 SENSOR_SIZE = 0.02
 MAX_FORCE = 10.0

@@ -1,7 +1,6 @@
 """Tests for pose tracking module."""
 
 import numpy as np
-import pytest
 import torch
 
 

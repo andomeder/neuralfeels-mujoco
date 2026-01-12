@@ -4,7 +4,7 @@ import numpy as np
 
 def test_scene_loads():
     model = mujoco.MjModel.from_xml_path("envs/assets/scene.xml")
-    data = mujoco.MjData(model)
+    mujoco.MjData(model)
 
     assert model.nbody == 24
     assert model.njnt == 17
@@ -14,7 +14,7 @@ def test_scene_loads():
 
 def test_allegro_hand_loads():
     model = mujoco.MjModel.from_xml_path("envs/assets/allegro/allegro_hand_right.xml")
-    data = mujoco.MjData(model)
+    mujoco.MjData(model)
 
     assert model.njnt == 16
     assert model.nu == 16
@@ -39,10 +39,10 @@ def test_simulation_step():
     model = mujoco.MjModel.from_xml_path("envs/assets/scene.xml")
     data = mujoco.MjData(model)
 
-    initial_time = data.time
-    mujoco.mj_step(model, data)
+    for _ in range(10):
+        mujoco.mj_step(model, data)
 
-    assert data.time > initial_time
+    assert data.time > 0
 
 
 def test_rendering():
@@ -57,22 +57,3 @@ def test_rendering():
     assert img.dtype == np.uint8
 
     renderer.close()
-
-
-if __name__ == "__main__":
-    test_scene_loads()
-    print("✓ test_scene_loads passed")
-
-    test_allegro_hand_loads()
-    print("✓ test_allegro_hand_loads passed")
-
-    test_tactile_geoms_exist()
-    print("✓ test_tactile_geoms_exist passed")
-
-    test_simulation_step()
-    print("✓ test_simulation_step passed")
-
-    test_rendering()
-    print("✓ test_rendering passed")
-
-    print("\nAll MuJoCo tests passed!")

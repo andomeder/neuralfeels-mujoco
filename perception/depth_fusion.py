@@ -349,30 +349,34 @@ class VisuotactileDepthFusion:
                 tactile_accumulator[tactile_mask] / tactile_count[tactile_mask]
             )
 
-            # Normalize tactile depth to match visual depth scale
-            if tactile_depth_map[tactile_mask].max() > 0:
-                tactile_normalized = tactile_depth_map.copy()
-                # Simple min-max normalization within tactile region
-                tac_min = tactile_depth_map[tactile_mask].min()
-                tac_max = tactile_depth_map[tactile_mask].max()
-                if tac_max > tac_min:
-                    tactile_normalized[tactile_mask] = (
-                        tactile_depth_map[tactile_mask] - tac_min
-                    ) / (tac_max - tac_min)
+            # Use metric tactile depth directly (no normalization to [0, 1])
+            # Tactile depth is ground truth for local scale
+            w_visual = self.visual_weight
+            w_tactile = self.tactile_weight
 
-                # Weighted fusion: tactile overrides visual where available
-                # fused = (visual * visual_weight + tactile * tactile_weight) / (sum of weights)
-                w_visual = self.visual_weight
-                w_tactile = self.tactile_weight
+            # If both modalities are active, align visual scale to tactile ground truth
+            if w_visual > 0 and w_tactile > 0 and tactile_mask.any():
+                vis_at_tac = visual_depth[tactile_mask]
+                tac_at_tac = tactile_depth_map[tactile_mask]
 
-                # In overlap regions, blend according to weights
-                fused_depth[tactile_mask] = (
-                    visual_depth[tactile_mask] * w_visual
-                    + tactile_normalized[tactile_mask] * w_tactile
-                ) / (w_visual + w_tactile)
+                # Use median for robustness against outliers in DPT
+                vis_ref = np.median(vis_at_tac)
+                tac_ref = np.median(tac_at_tac)
 
-                # Update confidence
-                confidence[tactile_mask] = (w_visual + w_tactile) / 2
+                if vis_ref > 1e-6:
+                    scale = tac_ref / vis_ref
+                    # Only scale if it is a significant correction or if visual is [0, 1]
+                    if vis_ref < 1.0 or abs(scale - 1.0) > 0.05:
+                        fused_depth = fused_depth * scale
+                        visual_depth = visual_depth * scale
+
+            # In overlap regions, blend according to weights
+            fused_depth[tactile_mask] = (
+                visual_depth[tactile_mask] * w_visual + tactile_depth_map[tactile_mask] * w_tactile
+            ) / (w_visual + w_tactile)
+
+            # Update confidence
+            confidence[tactile_mask] = (w_visual + w_tactile) / 2
 
         return fused_depth, confidence
 

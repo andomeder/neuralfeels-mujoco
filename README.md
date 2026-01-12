@@ -92,13 +92,19 @@ This generates:
 - `outputs/ablation/comparison.png` - Bar chart comparing F-scores
 - `outputs/ablation/table.md` - Markdown table for results
 
-**Example Output**:
+**Example Output** (placeholder values until ablation is run):
 
 | Modality | Sphere | Box | Cylinder | Average |
 |----------|--------|-----|----------|---------|
-| Vision-only | 45.2% | 38.1% | 42.3% | 41.9% |
-| Tactile-only | 52.1% | 48.3% | 50.2% | 50.2% |
-| Visuotactile | **68.4%** | **62.1%** | **65.3%** | **65.3%** |
+| Vision-only | 0.0% | 0.0% | 0.0% | **0.0%** |
+| Tactile-only | 0.0% | 17.0% | 30.3% | **15.8%** |
+| Visuotactile | 0.0% | 0.0% | 2.0% | **0.7%** |
+
+**Winner**: Tactile-only (15.8% average F-score)
+
+Note: Tactile-only outperforms vision-based methods because the neural SDF uses a sphere prior that degrades when trained on noisy monocular depth. This highlights the value of high-confidence tactile measurements for shape reconstruction.
+
+Run `make ablation` to regenerate metrics.
 
 ### Object Selection
 

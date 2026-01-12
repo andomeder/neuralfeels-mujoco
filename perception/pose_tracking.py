@@ -10,7 +10,7 @@ References:
 - Theseus: Differentiable nonlinear optimization library
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 import cv2
@@ -18,8 +18,6 @@ import numpy as np
 import theseus as th
 import torch
 import torch.nn as nn
-
-from src.utils.gpu_utils import get_device
 
 
 @dataclass
@@ -198,7 +196,6 @@ class SDFConsistencyFactor(th.CostFunction):
         """
         # Transform points from world to object frame
         # pose is world_T_object, so we need object_T_world = pose.inverse()
-        pose_inv = self.pose.inverse()
 
         # points is (batch, N, 3)
         points_world = self.points.tensor
