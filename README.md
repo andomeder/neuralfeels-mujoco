@@ -92,7 +92,7 @@ This generates:
 - `outputs/ablation/comparison.png` - Bar chart comparing F-scores
 - `outputs/ablation/table.md` - Markdown table for results
 
-**Example Output** (placeholder values until ablation is run):
+**Ablation Results** (using monocular depth - see [Issue #1](https://github.com/andomeder/neuralfeels-mujoco/issues/1) for GT depth improvement):
 
 | Modality | Sphere | Box | Cylinder | Average |
 |----------|--------|-----|----------|---------|
